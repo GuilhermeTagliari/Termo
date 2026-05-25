@@ -7,12 +7,17 @@ interface BoardProps {
   currentRow: number;
   currentCol: number;
   invalidShake: boolean;
+  wordLength: number;
   onTileClick: (col: number) => void;
 }
 
-export function Board({ board, currentRow, currentCol, invalidShake, onTileClick }: BoardProps) {
+export function Board({ board, currentRow, currentCol, invalidShake, wordLength, onTileClick }: BoardProps) {
   return (
-    <div className="board" aria-label="Tabuleiro do jogo">
+    <div
+      className="board"
+      aria-label="Tabuleiro do jogo"
+      style={{ '--word-length': wordLength } as React.CSSProperties}
+    >
       {board.map((row, i) => (
         <Row
           key={i}

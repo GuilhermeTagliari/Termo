@@ -59,7 +59,19 @@
 }
 
 @media (max-width: 400px) {
-  .key { height: 50px; min-width: 30px; font-size: 0.75rem; }
-  .key--wide { max-width: 56px; }
+  .key { height: 50px; min-width: 28px; font-size: 0.72rem; }
+  .key--wide { max-width: 52px; font-size: 0.65rem; }
   .keyboard__row { gap: 4px; }
+  .keyboard { gap: 6px; padding: 0 4px 12px; }
+}
+
+@media (max-height: 700px) {
+  .key { height: 48px; }
+  .keyboard { gap: 6px; padding-bottom: 8px; }
+}
+
+@media (max-height: 570px) {
+  .key { height: 40px; font-size: 0.72rem; }
+  .key--wide { font-size: 0.62rem; }
+  .keyboard { gap: 4px; padding-bottom: 6px; }
 }

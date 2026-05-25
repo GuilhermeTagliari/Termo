@@ -1,19 +1,34 @@
-import type { GameStatus, Statistics } from '../types';
+import type { GameStatus, SessionStats, Statistics } from '../types';
 import './Modal.css';
 
 interface ModalProps {
   status: GameStatus;
   targetWord: string;
   statistics: Statistics;
+  sessionStats: SessionStats;
+  wordLength: number;
   onClose: () => void;
+  onBackToMenu: () => void;
 }
 
-export function Modal({ status, targetWord, statistics, onClose }: ModalProps) {
+export function Modal({
+  status,
+  targetWord,
+  statistics,
+  sessionStats,
+  wordLength,
+  onClose,
+  onBackToMenu,
+}: ModalProps) {
   const winRate = statistics.played > 0
     ? Math.round((statistics.won / statistics.played) * 100)
     : 0;
 
   const maxDist = Math.max(...Object.values(statistics.guessDistribution), 1);
+
+  const bestLabel = sessionStats.bestGuessCount !== null
+    ? `${sessionStats.bestGuessCount} tentativa${sessionStats.bestGuessCount === 1 ? '' : 's'}`
+    : '—';
 
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Resultado">
@@ -29,6 +44,19 @@ export function Modal({ status, targetWord, statistics, onClose }: ModalProps) {
             A palavra era: <strong>{targetWord}</strong>
           </p>
         )}
+
+        <div className="modal__session">
+          <div className="session-stat">
+            <span className="session-stat__value">{sessionStats.wordsWon}</span>
+            <span className="session-stat__label">Palavra{sessionStats.wordsWon !== 1 ? 's' : ''} acertada{sessionStats.wordsWon !== 1 ? 's' : ''} hoje</span>
+          </div>
+          <div className="session-stat">
+            <span className="session-stat__value">{bestLabel}</span>
+            <span className="session-stat__label">Melhor acerto</span>
+          </div>
+        </div>
+
+        <h3 className="modal__dist-title">Estatísticas — {wordLength} letras</h3>
 
         <div className="modal__stats">
           <div className="stat">
@@ -68,6 +96,10 @@ export function Modal({ status, targetWord, statistics, onClose }: ModalProps) {
         </div>
 
         <NextWordTimer />
+
+        <button className="modal__menu-btn" onClick={onBackToMenu}>
+          Escolher outro tamanho
+        </button>
       </div>
     </div>
   );

@@ -1,28 +1,36 @@
 import { useCallback, useEffect, useReducer, useState } from 'react';
-import type { GameState, KeyStatus, Row, Statistics, TileStatus } from '../types';
-import { MAX_GUESSES, WORD_LENGTH } from '../types';
+import type { GameState, KeyStatus, Row, SessionStats, Statistics, TileStatus } from '../types';
+import { MAX_GUESSES } from '../types';
 import { computeGuess, normalizeChar } from '../utils/colorLogic';
 import { isValidWord } from '../utils/wordValidator';
-import { loadGameState, loadStatistics, saveGameState, updateStatistics } from '../utils/storage';
-import { getTodayWord } from '../data/wordlist';
+import {
+  loadGameState,
+  loadSessionStats,
+  loadStatistics,
+  recordSessionWin,
+  saveGameState,
+  updateStatistics,
+} from '../utils/storage';
+import { getRandomWordForDay } from '../data/wordsByLength';
 
-function emptyBoard(): Row[] {
+function emptyBoard(wordLength: number): Row[] {
   return Array.from({ length: MAX_GUESSES }, () => ({
-    tiles: Array.from({ length: WORD_LENGTH }, () => ({ letter: '', status: 'empty' as TileStatus })),
+    tiles: Array.from({ length: wordLength }, () => ({ letter: '', status: 'empty' as TileStatus })),
     submitted: false,
   }));
 }
 
-function buildInitialState(): GameState {
-  const saved = loadGameState();
+function buildInitialState(wordLength: number): GameState {
+  const saved = loadGameState(wordLength);
   if (saved) return saved;
   return {
-    board: emptyBoard(),
+    board: emptyBoard(wordLength),
     currentRow: 0,
     currentCol: 0,
-    targetWord: getTodayWord(),
+    targetWord: getRandomWordForDay(wordLength),
     status: 'playing',
     invalidShake: false,
+    wordLength,
   };
 }
 
@@ -36,27 +44,28 @@ type Action =
 function reducer(state: GameState, action: Action): GameState {
   if (state.status !== 'playing' && action.type !== 'CLEAR_SHAKE') return state;
 
+  const { wordLength } = state;
+
   switch (action.type) {
     case 'SET_COL': {
-      const col = Math.min(Math.max(action.col, 0), WORD_LENGTH - 1);
+      const col = Math.min(Math.max(action.col, 0), wordLength - 1);
       return { ...state, currentCol: col };
     }
 
     case 'ADD_LETTER': {
-      if (state.currentCol >= WORD_LENGTH) return state;
+      if (state.currentCol >= wordLength) return state;
       const board = state.board.map(r => ({ ...r, tiles: [...r.tiles] }));
       board[state.currentRow].tiles[state.currentCol] = {
         letter: action.letter,
         status: 'filled',
       };
-      const nextCol = Math.min(state.currentCol + 1, WORD_LENGTH - 1);
+      const nextCol = Math.min(state.currentCol + 1, wordLength - 1);
       return { ...state, board, currentCol: nextCol };
     }
 
     case 'DELETE_LETTER': {
       const board = state.board.map(r => ({ ...r, tiles: [...r.tiles] }));
       const row = board[state.currentRow];
-      // Se a posição atual tem letra, apaga ela; senão apaga a anterior
       if (row.tiles[state.currentCol]?.letter) {
         row.tiles[state.currentCol] = { letter: '', status: 'empty' };
         return { ...state, board };
@@ -71,7 +80,7 @@ function reducer(state: GameState, action: Action): GameState {
       const rowTiles = state.board[state.currentRow].tiles;
       if (rowTiles.some(t => t.letter === '')) return { ...state, invalidShake: true };
       const guess = rowTiles.map(t => t.letter).join('');
-      if (!isValidWord(guess)) return { ...state, invalidShake: true };
+      if (!isValidWord(guess, wordLength)) return { ...state, invalidShake: true };
 
       const tiles = computeGuess(guess, state.targetWord);
       const board = state.board.map(r => ({ ...r, tiles: [...r.tiles] }));
@@ -99,15 +108,20 @@ function reducer(state: GameState, action: Action): GameState {
   }
 }
 
-export function useGame() {
-  const [state, dispatch] = useReducer(reducer, null, () => buildInitialState());
-  const [statistics, setStatistics] = useState<Statistics>(loadStatistics);
+export function useGame(wordLength: number) {
+  const [state, dispatch] = useReducer(reducer, wordLength, buildInitialState);
+  const [statistics, setStatistics] = useState<Statistics>(() => loadStatistics(wordLength));
+  const [sessionStats, setSessionStats] = useState<SessionStats>(loadSessionStats);
 
   useEffect(() => {
     saveGameState(state);
     if (state.status === 'won' || state.status === 'lost') {
-      const updated = updateStatistics(state.status === 'won', state.currentRow);
+      const updated = updateStatistics(wordLength, state.status === 'won', state.currentRow);
       setStatistics(updated);
+      if (state.status === 'won') {
+        const session = recordSessionWin(state.currentRow);
+        setSessionStats(session);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status]);
@@ -135,12 +149,12 @@ export function useGame() {
   }, []);
 
   const moveCol = useCallback((delta: -1 | 1) => {
-    dispatch({ type: 'SET_COL', col: Math.min(Math.max(state.currentCol + delta, 0), WORD_LENGTH - 1) });
-  }, [state.currentCol]);
+    dispatch({ type: 'SET_COL', col: Math.min(Math.max(state.currentCol + delta, 0), wordLength - 1) });
+  }, [state.currentCol, wordLength]);
 
   const keyStatuses = computeKeyStatuses(state.board);
 
-  return { state, addLetter, deleteLetter, submitGuess, setCol, moveCol, keyStatuses, statistics };
+  return { state, addLetter, deleteLetter, submitGuess, setCol, moveCol, keyStatuses, statistics, sessionStats };
 }
 
 function computeKeyStatuses(board: Row[]): KeyStatus {
@@ -158,7 +172,6 @@ function computeKeyStatuses(board: Row[]): KeyStatus {
     if (!row.submitted) continue;
     for (const tile of row.tiles) {
       set(tile.letter, tile.status);
-      // também marca a tecla base sem acento (Â → A, É → E, etc.)
       const base = normalizeChar(tile.letter);
       if (base !== tile.letter) set(base, tile.status);
     }

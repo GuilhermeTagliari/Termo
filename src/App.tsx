@@ -1,13 +1,30 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Board } from './components/Board';
 import { Keyboard } from './components/Keyboard';
+import { MenuScreen } from './components/MenuScreen';
 import { Modal } from './components/Modal';
 import { useGame } from './hooks/useGame';
 import { useKeyboard } from './hooks/useKeyboard';
 import './App.css';
 
 export default function App() {
-  const { state, addLetter, deleteLetter, submitGuess, setCol, moveCol, keyStatuses, statistics } = useGame();
+  const [wordLength, setWordLength] = useState<number | null>(null);
+
+  if (wordLength === null) {
+    return <MenuScreen onSelect={setWordLength} />;
+  }
+
+  return <Game wordLength={wordLength} onBackToMenu={() => setWordLength(null)} />;
+}
+
+interface GameProps {
+  wordLength: number;
+  onBackToMenu: () => void;
+}
+
+function Game({ wordLength, onBackToMenu }: GameProps) {
+  const { state, addLetter, deleteLetter, submitGuess, setCol, moveCol, keyStatuses, statistics, sessionStats } =
+    useGame(wordLength);
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -43,7 +60,11 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
+        <button className="header__back" onClick={onBackToMenu} aria-label="Voltar ao menu">
+          ←
+        </button>
         <h1 className="header__title">PROJETO W</h1>
+        <span className="header__length">{wordLength} letras</span>
       </header>
 
       {toast && (
@@ -58,6 +79,7 @@ export default function App() {
           currentRow={state.currentRow}
           currentCol={state.currentCol}
           invalidShake={state.invalidShake}
+          wordLength={wordLength}
           onTileClick={isGameOver ? () => {} : setCol}
         />
       </main>
@@ -76,7 +98,13 @@ export default function App() {
           status={state.status}
           targetWord={state.targetWord}
           statistics={statistics}
+          sessionStats={sessionStats}
+          wordLength={wordLength}
           onClose={() => setShowModal(false)}
+          onBackToMenu={() => {
+            setShowModal(false);
+            onBackToMenu();
+          }}
         />
       )}
     </div>

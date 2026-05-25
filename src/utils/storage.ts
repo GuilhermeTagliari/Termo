@@ -1,20 +1,27 @@
-import type { GameState, Statistics } from '../types';
-
-const GAME_STATE_KEY = 'termo_game_state';
-const STATS_KEY = 'termo_statistics';
+import type { GameState, SessionStats, Statistics } from '../types';
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function saveGameState(state: GameState): void {
-  const payload = { date: todayKey(), state };
-  localStorage.setItem(GAME_STATE_KEY, JSON.stringify(payload));
+function gameStateKey(wordLength: number): string {
+  return `termo_game_state_${wordLength}`;
 }
 
-export function loadGameState(): GameState | null {
+function statsKey(wordLength: number): string {
+  return `termo_statistics_${wordLength}`;
+}
+
+const SESSION_KEY = 'termo_session';
+
+export function saveGameState(state: GameState): void {
+  const payload = { date: todayKey(), state };
+  localStorage.setItem(gameStateKey(state.wordLength), JSON.stringify(payload));
+}
+
+export function loadGameState(wordLength: number): GameState | null {
   try {
-    const raw = localStorage.getItem(GAME_STATE_KEY);
+    const raw = localStorage.getItem(gameStateKey(wordLength));
     if (!raw) return null;
     const { date, state } = JSON.parse(raw) as { date: string; state: GameState };
     if (date !== todayKey()) return null;
@@ -24,9 +31,14 @@ export function loadGameState(): GameState | null {
   }
 }
 
-export function loadStatistics(): Statistics {
+export function isLockedForToday(wordLength: number): boolean {
+  const saved = loadGameState(wordLength);
+  return saved !== null && saved.status === 'lost';
+}
+
+export function loadStatistics(wordLength: number): Statistics {
   try {
-    const raw = localStorage.getItem(STATS_KEY);
+    const raw = localStorage.getItem(statsKey(wordLength));
     if (raw) return JSON.parse(raw) as Statistics;
   } catch {
     // ignore
@@ -42,12 +54,12 @@ export function loadStatistics(): Statistics {
   };
 }
 
-export function saveStatistics(stats: Statistics): void {
-  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+export function saveStatistics(wordLength: number, stats: Statistics): void {
+  localStorage.setItem(statsKey(wordLength), JSON.stringify(stats));
 }
 
-export function updateStatistics(won: boolean, guessCount: number): Statistics {
-  const stats = loadStatistics();
+export function updateStatistics(wordLength: number, won: boolean, guessCount: number): Statistics {
+  const stats = loadStatistics(wordLength);
   const today = todayKey();
 
   if (stats.lastPlayedDate === today) return stats;
@@ -63,14 +75,42 @@ export function updateStatistics(won: boolean, guessCount: number): Statistics {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yKey = yesterday.toISOString().slice(0, 10);
-    stats.currentStreak = stats.lastWonDate === today && (stats.currentStreak === 0 || stats.lastPlayedDate === yKey || stats.lastWonDate === yKey)
-      ? stats.currentStreak + 1
-      : 1;
+    stats.currentStreak =
+      stats.currentStreak === 0 || stats.lastWonDate === yKey
+        ? stats.currentStreak + 1
+        : 1;
     stats.maxStreak = Math.max(stats.maxStreak, stats.currentStreak);
   } else {
     stats.currentStreak = 0;
   }
 
-  saveStatistics(stats);
+  saveStatistics(wordLength, stats);
   return stats;
+}
+
+export function loadSessionStats(): SessionStats {
+  const today = todayKey();
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (raw) {
+      const s = JSON.parse(raw) as SessionStats;
+      if (s.date === today) return s;
+    }
+  } catch {
+    // ignore
+  }
+  return { date: today, wordsWon: 0, bestGuessCount: null };
+}
+
+export function recordSessionWin(guessCount: number): SessionStats {
+  const s = loadSessionStats();
+  s.wordsWon += 1;
+  s.bestGuessCount =
+    s.bestGuessCount === null ? guessCount : Math.min(s.bestGuessCount, guessCount);
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+  } catch {
+    // ignore
+  }
+  return s;
 }

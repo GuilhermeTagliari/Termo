@@ -18,7 +18,7 @@ export function computeGuess(guess: string, target: string): Tile[] {
 
   // ── Passagem 1: posições exatas ────────────────────────────────────────
   // Letra A bate com Â (ignora acento). Tile verde exibe a letra DA RESPOSTA.
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < guessChars.length; i++) {
     if (base(guessChars[i]) === base(targetChars[i])) {
       result[i].status = 'correct';
       result[i].letter = targetChars[i]; // exibe com acento da resposta
@@ -29,7 +29,7 @@ export function computeGuess(guess: string, target: string): Tile[] {
   // ── Passagem 2: letras certas fora de lugar ────────────────────────────
   // Só procura entre as letras ainda NÃO riscadas, garantindo que letras
   // duplicadas recebam o status certo (verde > amarelo > cinza).
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < guessChars.length; i++) {
     if (result[i].status === 'correct') continue;
 
     const idx = remaining.findIndex(

@@ -19,6 +19,7 @@ export interface GameState {
   targetWord: string;
   status: GameStatus;
   invalidShake: boolean;
+  wordLength: number;
 }
 
 export interface Statistics {
@@ -31,9 +32,14 @@ export interface Statistics {
   lastWonDate: string;
 }
 
+export interface SessionStats {
+  date: string;
+  wordsWon: number;
+  bestGuessCount: number | null;
+}
+
 export interface KeyStatus {
   [key: string]: TileStatus;
 }
 
-export const WORD_LENGTH = 5;
 export const MAX_GUESSES = 6;

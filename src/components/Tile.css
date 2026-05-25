@@ -1,11 +1,24 @@
+/*
+  Tile size: ocupa o espaço disponível dividido pelo número de letras.
+  Fórmula: (largura_tela - padding_lateral - gaps_entre_tiles) / n_letras
+  Limitado a no máximo 62px e no mínimo 28px.
+*/
 .tile {
-  width: 62px;
-  height: 62px;
+  --gap: 5px;
+  --padding: 32px;
+  --tile-size: clamp(
+    28px,
+    calc((min(500px, 100vw) - var(--padding) - (var(--word-length, 5) - 1) * var(--gap)) / var(--word-length, 5)),
+    62px
+  );
+
+  width: var(--tile-size);
+  height: var(--tile-size);
   border: 2px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: clamp(0.75rem, calc(var(--tile-size) * 0.48), 2rem);
   font-weight: 700;
   text-transform: uppercase;
   color: var(--color-text);
@@ -13,6 +26,7 @@
   user-select: none;
   position: relative;
   transition: border-color 0.1s;
+  flex-shrink: 0;
 }
 
 .tile--filled {
