@@ -18,6 +18,24 @@ const LENGTHS = [4, 5, 6, 7, 8, 9, 10];
 // Só aceita letras do alfabeto português — sem números, hífens, apóstrofos, etc.
 const PT_RE = /^[a-záéíóúâêîôûãõàèìòùçüïöäëÿñ]+$/i;
 
+// Vogais portuguesas (para detectar clusters de consoantes inválidos)
+const VOWELS = new Set('aeiouáéíóúâêîôûãõàèìòùüy');
+
+// Rejeita palavras com 3+ consoantes seguidas sem vogal (ex.: "prbão", "bstr" OK, "prbf" não)
+function hasValidClusters(word) {
+  let run = 0;
+  for (const ch of word) {
+    if (VOWELS.has(ch)) { run = 0; } else { run++; }
+    if (run >= 4) return false;
+  }
+  return true;
+}
+
+// Rejeita palavras sem nenhuma vogal
+function hasVowel(word) {
+  return [...word].some(ch => VOWELS.has(ch));
+}
+
 console.log('Baixando corpus de frequência PT-BR (OpenSubtitles)...');
 const res = await fetch(URL);
 if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -30,10 +48,15 @@ const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 const byLength = new Map(LENGTHS.map(n => [n, []]));
 
 for (const line of lines) {
-  const word = line.split(' ')[0].toLowerCase();
+  const parts = line.split(' ');
+  const word = parts[0].toLowerCase();
+  const freq = parseInt(parts[1] ?? '0', 10);
   const len = word.length;
   if (!byLength.has(len)) continue;
   if (!PT_RE.test(word)) continue;
+  if (!hasVowel(word)) continue;
+  if (!hasValidClusters(word)) continue;
+  if (freq < 3) continue;          // descarta hápax e erros raros
   byLength.get(len).push(word);
 }
 
