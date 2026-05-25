@@ -1,6 +1,6 @@
-import { WORDS as WORDS5 } from './wordlist';
 import {
   CORPUS_4,
+  CORPUS_5,
   CORPUS_6,
   CORPUS_7,
   CORPUS_8,
@@ -10,7 +10,7 @@ import {
 
 export const WORDS_BY_LENGTH: Record<number, string[]> = {
   4: CORPUS_4,
-  5: WORDS5,
+  5: CORPUS_5,
   6: CORPUS_6,
   7: CORPUS_7,
   8: CORPUS_8,
