@@ -186,6 +186,14 @@
   margin: 0 0 12px;
 }
 
+.modal__continue {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-correct, #538d4e);
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
 .modal__menu-btn {
   display: block;
   width: 100%;

@@ -1,50 +1,17 @@
-# TERMO
+# PROJETO W
 
-Clone do [TERMO](https://term.ooo/) — versão brasileira do Wordle — construído com React, TypeScript e Vite.
+Clone do [TERMO](https://term.ooo/) — versão brasileira do Wordle — com modos de **4 a 10 letras**, palavras aleatórias por jogador e estatísticas por tamanho.
 
-## Como rodar localmente
-
-```bash
-# Instalar dependências
-npm install
-
-# Iniciar servidor de desenvolvimento (http://localhost:5173)
-npm run dev
-
-# Build de produção
-npm run build
-
-# Pré-visualizar o build
-npm run preview
-```
-
-## Deploy
-
-### Vercel (recomendado)
-
-```bash
-npm install -g vercel
-vercel --prod
-```
-
-### ngrok (expor dev server localmente)
-
-```bash
-# Terminal 1
-npm run dev
-
-# Terminal 2
-ngrok http 5173
-```
+🔗 **[termo-omega-pink.vercel.app](https://termo-omega-pink.vercel.app/)**
 
 ## Como jogar
 
-- Você tem **6 tentativas** para adivinhar a palavra de **5 letras** do dia
-- Digite usando o teclado físico ou o teclado virtual na tela
-- Pressione **Enter** para confirmar a tentativa
-- **Backspace** apaga a última letra
+1. **Escolha o tamanho** da palavra (4 a 10 letras) no menu inicial
+2. Você tem **6 tentativas** para adivinhar a palavra
+3. Se acertar, volte ao menu e jogue outro tamanho
+4. Se errar todas as 6, aquele tamanho fica bloqueado até amanhã 🔒
 
-### Cores
+### Cores das letras
 
 | Cor | Significado |
 |-----|-------------|
@@ -52,49 +19,80 @@ ngrok http 5173
 | 🟨 Amarelo | Letra existe, mas na posição errada |
 | ⬜ Cinza | Letra não está na palavra |
 
+### Ícones no menu
+
+| Ícone | Significado |
+|-------|-------------|
+| ✓ | Tamanho jogado hoje (ganhou) |
+| 🔒 | Tamanho bloqueado até amanhã (perdeu) |
+
+## Como rodar localmente
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # build de produção
+npm run preview    # pré-visualizar o build
+```
+
+### Atualizar lista de palavras
+
+```bash
+node scripts/fetch-wordlist.mjs
+```
+
+Baixa o corpus OpenSubtitles PT-BR (50k palavras) e gera `src/data/wordsByLength.generated.ts` com listas para cada tamanho.
+
 ## Arquitetura
 
 ```
 src/
-├── components/        # Componentes React (UI pura)
-│   ├── Board.tsx      # Grade 6×5 de tiles
-│   ├── Row.tsx        # Linha com animação de shake
-│   ├── Tile.tsx       # Célula individual com flip animado
-│   ├── Keyboard.tsx   # Teclado virtual com estado de cores
-│   └── Modal.tsx      # Modal de resultado e estatísticas
+├── components/
+│   ├── MenuScreen.tsx   # Seleção de tamanho de palavra
+│   ├── Board.tsx        # Grade 6×N de tiles (N = tamanho escolhido)
+│   ├── Row.tsx          # Linha com animação de shake
+│   ├── Tile.tsx         # Célula individual com flip animado (tamanho responsivo)
+│   ├── Keyboard.tsx     # Teclado virtual com estado de cores
+│   └── Modal.tsx        # Resultado, estatísticas e destaques da sessão
 ├── hooks/
-│   ├── useGame.ts     # Estado central do jogo (useReducer)
-│   └── useKeyboard.ts # Listener de teclado físico
+│   ├── useGame.ts       # Estado central do jogo (useReducer)
+│   └── useKeyboard.ts   # Listener de teclado físico
 ├── utils/
-│   ├── colorLogic.ts  # Algoritmo puro de coloração (sem efeitos colaterais)
-│   ├── wordValidator.ts # Validação via Set para O(1)
-│   └── storage.ts     # Persistência com localStorage
+│   ├── colorLogic.ts    # Algoritmo de coloração (duas passagens, suporte a acentos)
+│   ├── wordValidator.ts # Validação por tamanho
+│   └── storage.ts       # localStorage com chaves por tamanho e por dia
 ├── data/
-│   └── wordlist.ts    # 500+ palavras PT-BR + getTodayWord()
+│   ├── wordlist.ts                  # Lista curada de palavras de 5 letras
+│   ├── wordsByLength.ts             # Seleção e sorteio por tamanho
+│   └── wordsByLength.generated.ts   # Gerado por scripts/fetch-wordlist.mjs
 ├── types/
-│   └── index.ts       # Tipos e constantes globais
-├── App.tsx            # Composição, toast e modal trigger
-└── main.tsx           # Entry point
+│   └── index.ts         # Tipos globais (GameState, Statistics, SessionStats)
+├── App.tsx              # Menu → jogo, toast e modal
+└── main.tsx             # Entry point
+scripts/
+└── fetch-wordlist.mjs   # Baixa corpus PT-BR e gera wordsByLength.generated.ts
 ```
 
 ## Decisões técnicas
 
-### Lógica de coloração (`colorLogic.ts`)
-Função pura `computeGuess(guess, target)` que implementa o algoritmo em duas passagens:
-1. Marca letras na posição correta (`correct`)
-2. Marca letras presentes mas fora de posição (`present`), respeitando multiplicidade
+### Palavras aleatórias por jogador
+`getRandomWordForDay(length)` sorteia uma palavra por tamanho por dia e salva em `localStorage` — cada jogador recebe uma palavra diferente, sem necessidade de backend.
 
-### Gerenciamento de estado (`useGame.ts`)
-`useReducer` com dispatch tipado garante que todas as transições de estado sejam explícitas e testáveis. As ações `ADD_LETTER`, `DELETE_LETTER`, `SUBMIT_GUESS` e `CLEAR_SHAKE` cobrem o ciclo completo do jogo.
+### Tamanho dinâmico
+`WORD_LENGTH` deixou de ser uma constante global. O tamanho vive em `GameState.wordLength` e é passado como prop para os componentes. Os tiles se redimensionam via `clamp()` no CSS para caber em qualquer tela.
 
-### Palavra do dia
-`getTodayWord()` em `wordlist.ts` calcula o índice a partir da diferença de dias desde uma data de origem fixa — mesma palavra para todos os usuários no mesmo dia, sem necessidade de backend.
+### Bloqueio por tamanho
+Cada tamanho tem seu próprio estado salvo em `termo_game_state_{N}`. Perder bloqueia apenas aquele tamanho até meia-noite; os demais ficam disponíveis.
 
-### Persistência
-O estado do jogo é salvo no `localStorage` com a data do dia como chave de validade. Estatísticas (jogos, vitórias, sequências, distribuição de palpites) são mantidas em separado e persistem entre dias.
+### Estatísticas por sessão
+`SessionStats` rastreia quantas palavras foram acertadas no dia e qual foi o melhor desempenho (menor número de tentativas), exibidos no modal de resultado.
 
-### Animações
-- **Flip** nas tiles ao submeter (CSS `rotateX` com delay escalonado por posição)
+### Lógica de coloração
+Função pura `computeGuess(guess, target)` em duas passagens:
+1. Marca posições exatas (`correct`) — tile exibe a letra com o acento da resposta
+2. Marca letras fora de posição (`present`), respeitando multiplicidade
+
+### Animações CSS puras
+- **Flip** nas tiles ao submeter (delay escalonado por posição)
 - **Shake** na linha quando a palavra é inválida
 - **Pop** ao digitar uma letra
-- Todas as animações via CSS puro, sem dependências externas

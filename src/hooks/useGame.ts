@@ -113,15 +113,20 @@ export function useGame(wordLength: number) {
   const [statistics, setStatistics] = useState<Statistics>(() => loadStatistics(wordLength));
   const [sessionStats, setSessionStats] = useState<SessionStats>(loadSessionStats);
 
+  // Salva o estado sempre que board/linha/coluna/status mudam (não no shake, que é transiente)
   useEffect(() => {
+    if (state.invalidShake) return;
     saveGameState(state);
-    if (state.status === 'won' || state.status === 'lost') {
-      const updated = updateStatistics(wordLength, state.status === 'won', state.currentRow);
-      setStatistics(updated);
-      if (state.status === 'won') {
-        const session = recordSessionWin(state.currentRow);
-        setSessionStats(session);
-      }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.board, state.currentRow, state.currentCol, state.status]);
+
+  useEffect(() => {
+    if (state.status !== 'won' && state.status !== 'lost') return;
+    const updated = updateStatistics(wordLength, state.status === 'won', state.currentRow);
+    setStatistics(updated);
+    if (state.status === 'won') {
+      const session = recordSessionWin(state.currentRow);
+      setSessionStats(session);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status]);

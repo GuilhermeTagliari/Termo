@@ -36,6 +36,11 @@ export function isLockedForToday(wordLength: number): boolean {
   return saved !== null && saved.status === 'lost';
 }
 
+export function isWonToday(wordLength: number): boolean {
+  const saved = loadGameState(wordLength);
+  return saved !== null && saved.status === 'won';
+}
+
 export function loadStatistics(wordLength: number): Statistics {
   try {
     const raw = localStorage.getItem(statsKey(wordLength));

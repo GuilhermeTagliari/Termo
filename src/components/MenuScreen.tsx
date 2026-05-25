@@ -1,4 +1,4 @@
-import { isLockedForToday } from '../utils/storage';
+import { isLockedForToday, isWonToday } from '../utils/storage';
 import './MenuScreen.css';
 
 interface MenuScreenProps {
@@ -20,24 +20,32 @@ export function MenuScreen({ onSelect }: MenuScreenProps) {
         <div className="menu__grid">
           {LENGTHS.map(len => {
             const locked = isLockedForToday(len);
+            const won = isWonToday(len);
+            const disabled = locked || won;
+
+            let btnClass = 'menu__btn';
+            if (locked) btnClass += ' menu__btn--locked';
+            if (won) btnClass += ' menu__btn--won';
+
             return (
               <button
                 key={len}
-                className={`menu__btn${locked ? ' menu__btn--locked' : ''}`}
-                onClick={() => !locked && onSelect(len)}
-                disabled={locked}
-                aria-label={`${len} letras${locked ? ' — bloqueado hoje' : ''}`}
+                className={btnClass}
+                onClick={() => !disabled && onSelect(len)}
+                disabled={disabled}
+                aria-label={`${len} letras${locked ? ' — bloqueado hoje' : won ? ' — já jogado hoje' : ''}`}
               >
                 <span className="menu__btn-num">{len}</span>
                 <span className="menu__btn-label">letras</span>
-                {locked && <span className="menu__btn-lock">🔒</span>}
+                {locked && <span className="menu__btn-badge">🔒</span>}
+                {won && <span className="menu__btn-badge">✓</span>}
               </button>
             );
           })}
         </div>
 
         <p className="menu__hint">
-          Palavras bloqueadas voltam amanhã
+          🔒 volta amanhã &nbsp;·&nbsp; ✓ jogado hoje
         </p>
       </div>
     </div>

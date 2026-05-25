@@ -95,17 +95,23 @@ export function Modal({
           })}
         </div>
 
-        <NextWordTimer />
+        {status === 'won' ? (
+          <p className="modal__continue">
+            Escolha outro tamanho para continuar jogando!
+          </p>
+        ) : (
+          <NextWordTimer wordLength={wordLength} />
+        )}
 
         <button className="modal__menu-btn" onClick={onBackToMenu}>
-          Escolher outro tamanho
+          {status === 'won' ? 'Jogar outro tamanho ▶' : 'Voltar ao menu'}
         </button>
       </div>
     </div>
   );
 }
 
-function NextWordTimer() {
+function NextWordTimer({ wordLength }: { wordLength: number }) {
   const now = new Date();
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
@@ -117,7 +123,7 @@ function NextWordTimer() {
 
   return (
     <p className="modal__next">
-      Próxima palavra em: <strong>{h}:{m}:{s}</strong>
+      Próxima palavra de {wordLength} letras em: <strong>{h}:{m}:{s}</strong>
     </p>
   );
 }

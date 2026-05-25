@@ -1,8 +1,8 @@
 .keyboard {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 8px 16px;
+  gap: 10px;
+  padding: 8px 8px 20px;
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
