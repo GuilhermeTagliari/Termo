@@ -1,0 +1,7 @@
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  padding: 10px 0;
+}
