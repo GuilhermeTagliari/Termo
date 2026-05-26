@@ -188,3 +188,5 @@ function computeKeyStatuses(board: Row[]): KeyStatus {
 
   return statuses;
 }
+
+export { reducer, emptyBoard, computeKeyStatuses };

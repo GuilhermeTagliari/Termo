@@ -74,6 +74,7 @@ export function updateStatistics(wordLength: number, won: boolean, guessCount: n
 
   if (won) {
     stats.won += 1;
+    const prevLastWonDate = stats.lastWonDate;
     stats.lastWonDate = today;
     stats.guessDistribution[guessCount] = (stats.guessDistribution[guessCount] ?? 0) + 1;
 
@@ -81,7 +82,7 @@ export function updateStatistics(wordLength: number, won: boolean, guessCount: n
     yesterday.setDate(yesterday.getDate() - 1);
     const yKey = yesterday.toISOString().slice(0, 10);
     stats.currentStreak =
-      stats.currentStreak === 0 || stats.lastWonDate === yKey
+      stats.currentStreak === 0 || prevLastWonDate === yKey
         ? stats.currentStreak + 1
         : 1;
     stats.maxStreak = Math.max(stats.maxStreak, stats.currentStreak);
