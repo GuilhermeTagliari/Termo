@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { GameStatus, SessionStats, Statistics } from '../types';
 import './Modal.css';
 
@@ -111,12 +112,22 @@ export function Modal({
   );
 }
 
-function NextWordTimer({ wordLength }: { wordLength: number }) {
+function getTimeUntilMidnight() {
   const now = new Date();
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);
-  const diff = tomorrow.getTime() - now.getTime();
+  return tomorrow.getTime() - now.getTime();
+}
+
+function NextWordTimer({ wordLength }: { wordLength: number }) {
+  const [diff, setDiff] = useState(getTimeUntilMidnight);
+
+  useEffect(() => {
+    const id = setInterval(() => setDiff(getTimeUntilMidnight()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
   const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
   const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');

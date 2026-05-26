@@ -80,6 +80,10 @@ function reducer(state: GameState, action: Action): GameState {
       const rowTiles = state.board[state.currentRow].tiles;
       if (rowTiles.some(t => t.letter === '')) return { ...state, invalidShake: true };
       const guess = rowTiles.map(t => t.letter).join('');
+      const alreadyGuessed = state.board
+        .slice(0, state.currentRow)
+        .some(r => r.submitted && r.tiles.map(t => t.letter).join('') === guess);
+      if (alreadyGuessed) return { ...state, invalidShake: true };
       if (!isValidWord(guess, wordLength)) return { ...state, invalidShake: true };
 
       const tiles = computeGuess(guess, state.targetWord);

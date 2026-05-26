@@ -9,8 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "dictionary-pt": "^4.0.0",
-    "nspell": "^2.1.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
